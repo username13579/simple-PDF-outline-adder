@@ -1,11 +1,15 @@
 # Created by OpossumDaemon, released for public domain
-
+# edited by Grant Dersom
 #!/usr/bin/env python
 
+import locale
+import subprocess
 from sys import argv, exit
 from os import system, remove
 import re
 from random import randint
+
+import ghostscript
 
 def read_index(path):
     base = 0     # By default the page base is 0
@@ -17,7 +21,7 @@ def read_index(path):
     try:
         f = open(path)
     except:
-        print 'The file cannot be opened'
+        print('The file cannot be opened')
         exit(-1)
     l = f.readlines()
     l2 = []
@@ -39,7 +43,7 @@ def read_index(path):
                 # Empty line
                 if re.match(r_empty, l[i]) == None:
                     # Line not recognized
-                    print 'Error while reading the line %d' % (i+1)
+                    print('Error while reading the line %d' % (i+1))
                     exit(-1)
 
     f.close()
@@ -57,7 +61,7 @@ def read_index(path):
                 if(l2[j][0] == level):
                     count = count + 1
         elif dif > 1:
-            print 'Error at line %d: the difference between the next subsection level and this one must not be bigger than one.' % l2[i][3]
+            print('Error at line %d: the difference between the next subsection level and this one must not be bigger than one.' % l2[i][3])
             exit(-1)
         else:
             level = l2[i+1][0]
@@ -78,6 +82,7 @@ def read_index(path):
         
     # Save the file
     tmp_filename = '.tmp_%x.info' % (randint(0,2**64))
+    print(tmp_filename)
     f = open(tmp_filename, 'w')
     f.writelines(out)
     f.close()
@@ -87,11 +92,29 @@ def read_index(path):
 
 def main():
     if len(argv) != 4:
-        print 'Arguments: input_pdf_file outline_file output_pdf_file'
+        print('Arguments: input_pdf_file outline_file output_pdf_file')
         exit(-1)
     tmp_filename = read_index(argv[2])
-    cmd = 'gs -sDEVICE=pdfwrite -q -dBATCH -dNOPAUSE -sOutputFile=%s %s -f %s' % (argv[3],tmp_filename,argv[1])
-    system(cmd)
+    args = [
+        "C:\\Program Files\\gs\\gs9.54.0\\bin\\gswin64.exe",
+        "-sDEVICE=pdfwrite",
+        "-q",
+        "-dBATCH",
+        "-dNOPAUSE",
+        f"-sOutputFile={argv[3]}",
+        f"{tmp_filename}",
+        "-f",
+        f"{argv[1]}"
+    ]
+    print(args)
+    gs_execute(args)
     remove(tmp_filename)
+    
+def gs_execute(commands):
+    encoding = locale.getpreferredencoding()
+    args = [a.encode(encoding) for a in commands]
+    result = ""
+    ghostscript.Ghostscript(*args, stdout=result)
+    return result
 
 main()
